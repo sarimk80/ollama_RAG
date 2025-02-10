@@ -2,14 +2,18 @@ import ollama
 from pydantic import BaseModel
 import pdfplumber
 import chromadb
-import streamlit
+import streamlit as st
+import asyncio
+from streamlit_pdf_viewer import pdf_viewer
+import nest_asyncio
+import chromadb.api
+
 
 data = []
 table_data = []
 embedd_result = ''
 
-client = chromadb.Client()
-collection = client.create_collection(name="docs")
+
 
 def ask_deepseek(prompt,data):
     response = ollama.chat(
@@ -22,16 +26,9 @@ def ask_deepseek(prompt,data):
             
         ]
     )
-    # response = ollama.generate(
-    #     model='deepseek-r1:1.5b',
-    #     prompt = f'Using this data: {data}. Respond to this prompt: {prompt}'
-        
-    # )
-        
-    #print(response['response'])
     print(response['message']['content'])
 
-def prompt_input():
+def prompt_input(collection):
     prompt = "WHY SHOULD AI MEET HUMAN “STUPIDITY”?"
 
     prompt_embedd = ollama.embed(
@@ -61,7 +58,7 @@ def prompt_input():
     
         
 
-def emdedd_text(text):
+def emdedd_text(text,collection):
     for i , d in enumerate(text):
 
         embedd_response = ollama.embed(
@@ -74,43 +71,46 @@ def emdedd_text(text):
             embeddings=embeddings,
             documents=[d]
         )
-        #return embedd_response['embeddings']
-        prompt_input()
+        prompt_input(collection=collection)
 
 def chunk_text(text,chunk_size=131000):
     words = text.split()
     return [' '.join(words[i:i + chunk_size]) for i in range(0, len(words), chunk_size)]
     
 
-
-with pdfplumber.open('research_paper.pdf') as pdf:
-    pages = pdf.pages
-    for p in pages:
-        data.append(p.extract_text())
-        table_data.append(p.extract_table())
-    chunk_of_text = chunk_text(''.join(data))
-    emdedd_text(chunk_of_text)
-
-
+def read_pdf(collection):
+    with pdfplumber.open('research_paper.pdf') as pdf:
+        pages = pdf.pages
+        for p in pages:
+            data.append(p.extract_text())
+            table_data.append(p.extract_table())
+        chunk_of_text = chunk_text(''.join(data))
+        emdedd_text(chunk_of_text,collection=collection)
 
 
+def main(collection):
+    st.set_page_config(layout="wide")
+    st.title("Hello world")
+    st.header("Upload research paper to ask questions and make power point presentation")
+    col1, col2 = st.columns([0.6,0.4])
 
+    with col1:
+        uploaded_file = st.file_uploader('Choose your PDF file', type="pdf")
+        if uploaded_file is not None:
+            binary_data = uploaded_file.getvalue()
+            pdf_viewer(input=binary_data,
+                width=700)
+    with col2:
+        container = st.container(height=350,border=True)
 
+        input_prompt = st.chat_input(placeholder="Enter message here")
 
-# response = chat(
-#     model="deepseek-r1:1.5b",
-#     messages=[
-#         {
-#             'role':'user',
-#             'content':'can you update the content of the resume and make it look good'
-#         },
-#         {
-#             'role':'assistant',
-#             'content':f"{data}"
-#         }
-#     ],
-#     options={'temperature':0}
+if __name__== '__main__':
+    client = chromadb.PersistentClient()
+    client.clear_system_cache()
+    client.delete_collection(name='docs')
+    collection = client.create_collection(name="docs")
 
-# )
-
-# print(response['message']['content'])
+    import asyncio
+    nest_asyncio.apply()
+    main(collection=collection)
