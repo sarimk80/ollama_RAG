@@ -38,7 +38,7 @@ def ask_deepseek(prompt,embedResult):
         ]
     )
     result = response['message']['content']
-    print(response['message']['content'])
+    return response['message']['content']
 
 def prompt_input(inputPrompt):
     prompt = inputPrompt
@@ -61,22 +61,22 @@ def prompt_input(inputPrompt):
     and isinstance(result['documents'][0], list) \
     and len(result['documents'][0]) > 0:
         data = result['documents'][0][0]
-        print("THIS IS DATA FROM COLLECTION")
         embedd_result = ' '.join(str(item) for sublist in data for item in sublist)
-        ask_deepseek(prompt,data)
+        return  ask_deepseek(prompt,data)
         
     else:
         data = None  # or raise an error/handle missing data
+        return ''
     
         
 
 def emdedd_text(text):
     for i , d in enumerate(text):
-        print(d)
         embedd_response = ollama.embed(
             model='nomic-embed-text:latest',
             input= d
         )
+        print(d)
         embeddings = embedd_response["embeddings"]
         collection.add(
             ids=[str(i)],
@@ -84,7 +84,6 @@ def emdedd_text(text):
             documents=[d]
         )
         #prompt_input(collection=collection)
-    print('All text is embedded')
 
 def chunk_text(text,chunk_size=2000):
     words = text.split()
@@ -115,37 +114,59 @@ def read_pdf(uploaded_file):
         print("Ready to ask question")
         
 
-
+@st.fragment
 def inputAndOutputUI(collection):
-    container = st.container(height=400,border=True)
+    # # Initialize chat history
+    # if "messages" not in st.session_state:
+    #     st.session_state.messages = []
+    
+    # # Display chat messages from history on app rerun
+    # for message in st.session_state.messages:
+    #     with st.chat_message(message["role"]):
+    #         st.markdown(message["content"])
 
-    input_prompt = st.chat_input(placeholder="Enter message here")
-    if input_prompt:
-        prompt_input(inputPrompt=input_prompt)
+    # React to user input
+    if prompt := st.chat_input("Enter your question?"):
+        # Display user message in chat message container
+        st.chat_message("user").markdown(prompt)
+        # Add user message to chat history
+        #st.session_state.messages.append({"role": "user", "content": prompt})
+
+        response = prompt_input(inputPrompt=prompt)
+        print(response)
+
+        #response = result
+        # Display assistant response in chat message container
+        with st.chat_message("assistant"):
+            st.markdown(response)
+        # Add assistant response to chat history
+        #st.session_state.messages.append({"role": "assistant", "content": response})
+
+    # container = st.container(height=400,border=True)
+
+    # input_prompt = st.chat_input(placeholder="Enter message here")
+    # if input_prompt:
+    #     prompt_input(inputPrompt=input_prompt)
 
 
 
 def main(collection):
     st.set_page_config(layout="wide")
     st.header("Upload research paper to ask questions and make power point presentation")
-    col1, col2 = st.columns([0.4,0.6])
+    col1, col2 = st.columns([0.5,0.5])
 
     with col1:
         uploaded_file = st.file_uploader('Choose your PDF file', type="pdf")
         if uploaded_file is not None:
             binary_data = uploaded_file.getvalue()
             pdf_viewer(input=binary_data,
-                width=550)
+                width=600,height=500)
             read_pdf(uploaded_file)
-    with col2:
+    with col2.container(height=450):
         inputAndOutputUI(collection=collection)
         
 
 if __name__== '__main__':
-    # client = chromadb.PersistentClient()
-    # client.clear_system_cache()
-    # client.delete_collection(name='docs')
-    # collection = client.create_collection(name="docs")
 
     import asyncio
     nest_asyncio.apply()
