@@ -83,7 +83,6 @@ def emdedd_text(text):
             embeddings = embeddings,
             documents=[d]
         )
-        #prompt_input(collection=collection)
 
 def chunk_text(text,chunk_size=2000):
     words = text.split()
@@ -94,8 +93,6 @@ def chunk_text(text,chunk_size=2000):
 def read_pdf(uploaded_file):
     cleaned_text = ''
 
-#def read_pdf(collection):
-    #with pdfplumber.open('research_paper.pdf') as pdf:
 
     with pdfplumber.open(uploaded_file) as pdf:
         pages = pdf.pages
@@ -106,7 +103,7 @@ def read_pdf(uploaded_file):
                     break
                 cleaned_text += text + "\n"
                 data.append(cleaned_text)
-            table_data.append(p.extract_table())
+            table_data.append(p.extract_tables())
         chunk_of_text = chunk_text(''.join(data))
         
         print("Read pdf done")
@@ -116,43 +113,23 @@ def read_pdf(uploaded_file):
 
 @st.fragment
 def inputAndOutputUI(collection):
-    # # Initialize chat history
-    # if "messages" not in st.session_state:
-    #     st.session_state.messages = []
     
-    # # Display chat messages from history on app rerun
-    # for message in st.session_state.messages:
-    #     with st.chat_message(message["role"]):
-    #         st.markdown(message["content"])
-
-    # React to user input
     if prompt := st.chat_input("Enter your question?"):
-        # Display user message in chat message container
         st.chat_message("user").markdown(prompt)
-        # Add user message to chat history
-        #st.session_state.messages.append({"role": "user", "content": prompt})
+        
 
         response = prompt_input(inputPrompt=prompt)
         print(response)
 
-        #response = result
-        # Display assistant response in chat message container
+        
         with st.chat_message("assistant"):
             st.markdown(response)
-        # Add assistant response to chat history
-        #st.session_state.messages.append({"role": "assistant", "content": response})
-
-    # container = st.container(height=400,border=True)
-
-    # input_prompt = st.chat_input(placeholder="Enter message here")
-    # if input_prompt:
-    #     prompt_input(inputPrompt=input_prompt)
-
+        
 
 
 def main(collection):
     st.set_page_config(layout="wide")
-    st.header("Upload research paper to ask questions and make power point presentation")
+    st.header("Upload research paper to ask questions")
     col1, col2 = st.columns([0.5,0.5])
 
     with col1:
@@ -160,7 +137,7 @@ def main(collection):
         if uploaded_file is not None:
             binary_data = uploaded_file.getvalue()
             pdf_viewer(input=binary_data,
-                width=600,height=500)
+                width=600)
             read_pdf(uploaded_file)
     with col2.container(height=450):
         inputAndOutputUI(collection=collection)
