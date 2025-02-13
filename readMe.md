@@ -52,3 +52,4 @@ streamlit-pdf-viewer>=0.9.0
 ``` python3 -m streamlit run app.py ```
 
 
+### The time required for embedding increases with the size of the research paper and also depends on your PC’s processing power.
